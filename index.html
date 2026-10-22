@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta property="og:title" content="Detective de Pantallas · UTEL">
+<meta property="og:description" content="Encuentra los 6 errores de diseño del sistema escolar. ¿Me superas?">
 <title>Detective de Pantallas</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -143,6 +145,31 @@ input[type=text]:focus { outline: 3px solid var(--green-soft); border-color: var
 .gtable th, .gtable td { border: 1px solid #CFCFC7; padding: 4px 6px; text-align: left; }
 .gtable th { background: #EFF6EE; }
 .tablewrap { overflow-x: auto; }
+/* dinámica extra */
+.cd { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(3px); }
+.cd span { font-family: var(--f-display); font-weight: 800; font-size: clamp(5rem, 28vw, 9rem); color: var(--violet); animation: cdpop .9s ease both; }
+@keyframes cdpop { 0% { transform: scale(2.2); opacity: 0 } 30% { transform: scale(1); opacity: 1 } 100% { transform: scale(.6); opacity: 0 } }
+.lens { position: fixed; z-index: 40; width: 74px; height: 74px; margin: -37px 0 0 -37px; border-radius: 50%; border: 4px solid var(--violet); box-shadow: 0 0 0 3px rgba(255,255,255,.7), 0 6px 16px rgba(0,0,0,.25); pointer-events: none; background: radial-gradient(circle, rgba(255,255,255,.08), rgba(91,43,196,.08)); }
+.lens::after { content: ""; position: absolute; width: 30px; height: 7px; background: var(--violet); border-radius: 4px; right: -24px; bottom: -6px; transform: rotate(45deg); }
+.ripple { position: fixed; z-index: 45; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; border: 3px solid var(--c, var(--violet)); pointer-events: none; animation: rip .55s ease-out forwards; }
+@keyframes rip { to { transform: scale(5); opacity: 0 } }
+.combo { position: fixed; left: 50%; top: 32%; z-index: 65; transform: translateX(-50%); font-family: var(--f-display); font-weight: 800; font-size: clamp(1.6rem, 8vw, 2.6rem); color: #FFFFFF; background: var(--violet); padding: 6px 22px; border-radius: 999px; box-shadow: 0 8px 20px rgba(0,0,0,.25); pointer-events: none; animation: combo 1s cubic-bezier(.3,1.6,.5,1) forwards; white-space: nowrap; }
+@keyframes combo { 0% { transform: translateX(-50%) scale(.3) rotate(-8deg); opacity: 0 } 25% { transform: translateX(-50%) scale(1.1) rotate(3deg); opacity: 1 } 75% { opacity: 1 } 100% { transform: translateX(-50%) scale(1) translateY(-30px); opacity: 0 } }
+.flash { position: fixed; inset: 0; z-index: 44; pointer-events: none; animation: flash .35s ease forwards; }
+@keyframes flash { from { opacity: .35 } to { opacity: 0 } }
+.icon-btn { border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; min-width: 40px; height: 34px; cursor: pointer; font-size: 1rem; }
+.pill.pts b { color: var(--violet); }
+.pts-pop { animation: ptspop .4s cubic-bezier(.3,1.7,.5,1); display: inline-block; }
+@keyframes ptspop { 0% { transform: scale(1.6) } 100% { transform: scale(1) } }
+.share { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+.share b { font-family: var(--f-display); }
+.sgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.sbtn { font-family: var(--f-display); font-weight: 700; font-size: .95rem; border: 0; border-radius: 12px; padding: 12px 10px; min-height: 48px; cursor: pointer; color: #FFFFFF; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.sbtn.wa { background: #1FA855; } .sbtn.fb { background: #1877F2; } .sbtn.x { background: #111111; } .sbtn.cp { background: var(--violet); } .sbtn.img { background: #E1306C; } .sbtn.nat { background: var(--green-deep); }
+.sbtn svg { width: 20px; height: 20px; flex: none; }
+.copied { font-size: .85rem; color: var(--ok); min-height: 1.2em; margin: 0; }
+.big-score { font-family: var(--f-display); font-weight: 800; font-size: 2.4rem; color: var(--violet); line-height: 1; font-variant-numeric: tabular-nums; }
+.big-score small { display: block; font-size: .85rem; color: var(--muted); font-weight: 600; }
 canvas#fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 70; }
 footer { text-align: center; font-size: .82rem; color: var(--muted); }
 footer b { color: var(--ink); }
@@ -174,7 +201,7 @@ const ERR = {
 };
 const ORDER = ["req", "date", "ok", "xls", "tiny", "who"];
 const LIMIT = 90;
-const S = { name: "", found: [], left: LIMIT, timer: null, over: false, misses: 0 };
+const S = { name: "", found: [], left: LIMIT, timer: null, over: false, misses: 0, pts: 0, last: 0, combo: 0, sound: true, started: false };
 const app = document.getElementById("app");
 const $ = (s) => document.querySelector(s);
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -201,10 +228,10 @@ function start() {
 function hs(id, html, extra = "") { return `<div class="hs" data-e="${id}" role="button" tabindex="0" aria-label="Revisar esta parte" ${extra}>${html}</div>`; }
 
 function play() {
-  S.found = []; S.left = LIMIT; S.over = false; S.misses = 0;
+  S.found = []; S.left = LIMIT; S.over = false; S.misses = 0; S.pts = 0; S.last = 0; S.combo = 0; S.started = false;
   app.innerHTML = `
   <div class="hud">
-    <div class="hudrow"><span class="pill">Errores <b id="cnt">0/6</b></span><span class="pill time" id="tm">⏱ <b id="sec">${LIMIT}</b> s</span></div>
+    <div class="hudrow"><span class="pill">🔍 <b id="cnt">0/6</b></span><span class="pill pts">⭐ <b id="pts">0</b></span><span class="pill time" id="tm">⏱ <b id="sec">${LIMIT}</b> s</span><button class="icon-btn" id="snd" aria-label="Sonido">${S.sound ? "🔊" : "🔇"}</button></div>
     <div class="bar" id="bar"><i id="bari"></i></div>
     <p class="hint">Toca los errores en las dos pantallas. Baja para ver la boleta.</p>
   </div>
@@ -243,14 +270,68 @@ function play() {
 
   document.querySelectorAll(".mock").forEach((m) => m.addEventListener("click", onMockClick));
   document.querySelectorAll(".hs").forEach((h) => h.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); h.click(); } }));
+  $("#snd").addEventListener("click", () => { S.sound = !S.sound; $("#snd").textContent = S.sound ? "🔊" : "🔇"; });
+  setupLens();
   clearInterval(S.timer);
-  S.timer = setInterval(tick, 1000);
   updBar();
+  window.scrollTo({ top: 0 });
+  countdown(() => { S.started = true; S.last = Date.now(); S.timer = setInterval(tick, 1000); });
 }
+
+function countdown(done) {
+  const o = document.createElement("div"); o.className = "cd"; document.body.appendChild(o);
+  const seq = ["3", "2", "1", "¡Ya!"]; let i = 0;
+  const step = () => {
+    if (i >= seq.length) { o.remove(); done(); return; }
+    o.innerHTML = `<span>${seq[i]}</span>`; beep(i < 3 ? 520 : 880, i < 3 ? .12 : .25, "square", .06); i++;
+    setTimeout(step, reduce ? 300 : 800);
+  };
+  step();
+}
+
+/* sonido (se activa después de tocar un botón) */
+let AC = null;
+function beep(f, d, type = "sine", vol = .08, when = 0) {
+  if (!S.sound) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const o = AC.createOscillator(), g = AC.createGain(), t = AC.currentTime + when;
+    o.type = type; o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + d + .02);
+  } catch (e) {}
+}
+const sOk = () => { beep(660, .12, "triangle", .1); beep(990, .18, "triangle", .1, .09); };
+const sCombo = () => { [660, 830, 990, 1320].forEach((f, i) => beep(f, .14, "triangle", .09, i * .07)); };
+const sBad = () => { beep(160, .25, "sawtooth", .07); };
+const sTick = () => beep(1200, .04, "square", .03);
+const sWin = () => { [523, 659, 784, 1047, 784, 1047].forEach((f, i) => beep(f, .2, "triangle", .1, i * .12)); };
+const sLose = () => { [392, 330, 262].forEach((f, i) => beep(f, .28, "sine", .09, i * .2)); };
+
+/* lupa que sigue al ratón y ondas al tocar */
+let lens = null;
+function setupLens() {
+  document.querySelectorAll(".mock").forEach((m) => {
+    m.addEventListener("pointermove", (e) => {
+      if (e.pointerType !== "mouse" || S.over) return;
+      if (!lens) { lens = document.createElement("div"); lens.className = "lens"; document.body.appendChild(lens); }
+      lens.hidden = false; lens.style.left = e.clientX + "px"; lens.style.top = e.clientY + "px";
+    });
+    m.addEventListener("pointerleave", () => { if (lens) lens.hidden = true; });
+  });
+}
+function ripple(x, y, c) {
+  const r = document.createElement("div"); r.className = "ripple"; r.style.left = x + "px"; r.style.top = y + "px";
+  if (c) r.style.setProperty("--c", c); document.body.appendChild(r); setTimeout(() => r.remove(), 600);
+}
+function flash(c) { if (reduce) return; const f = document.createElement("div"); f.className = "flash"; f.style.background = c; document.body.appendChild(f); setTimeout(() => f.remove(), 400); }
+function setPts(add) { S.pts = Math.max(0, S.pts + add); const b = $("#pts"); if (!b) return; b.textContent = S.pts; b.classList.remove("pts-pop"); void b.offsetWidth; b.classList.add("pts-pop"); }
 
 function tick() {
   if (S.over) return;
+  if (!S.started) return;
   S.left = Math.max(0, S.left - 1); updBar();
+  if (S.left <= 10 && S.left > 0) sTick();
   if (S.left <= 0) end(false);
 }
 function updBar() {
@@ -261,15 +342,15 @@ function updBar() {
 }
 
 function onMockClick(e) {
-  if (S.over) return;
+  if (S.over || !S.started) return;
   const h = e.target.closest(".hs");
   if (h) {
     if (h.classList.contains("found")) return;
     found(h.dataset.e, h, e);
   } else {
-    S.left = Math.max(0, S.left - 5); S.misses++; updBar();
+    S.left = Math.max(0, S.left - 5); S.misses++; updBar(); setPts(-20); sBad(); flash("var(--bad)"); ripple(e.clientX, e.clientY, "var(--bad)"); S.combo = 0;
     const m = e.currentTarget; m.classList.remove("shake"); void m.offsetWidth; m.classList.add("shake");
-    floatText("−5 s", e.clientX, e.clientY, "bad");
+    floatText("−5 s  −20", e.clientX, e.clientY, "bad");
     if (navigator.vibrate) { try { navigator.vibrate(100); } catch (x) {} }
     if (S.left <= 0) end(false);
   }
@@ -282,7 +363,13 @@ function found(id, h, e) {
   const tag = document.createElement("span"); tag.className = "num"; tag.style.background = a[2]; tag.textContent = n; h.appendChild(tag);
   const r = h.getBoundingClientRect();
   const x = e && e.clientX ? e.clientX : r.left + r.width / 2, y = e && e.clientY ? e.clientY : r.top;
-  floatText("¡Encontrado!", x, y, "ok"); burst(x, y, 16);
+  const now = Date.now(), fast = S.last && now - S.last < 7000 && n > 1;
+  S.combo = fast ? S.combo + 1 : 0; S.last = now;
+  const gain = 100 + (fast ? 50 * S.combo : 0);
+  setPts(gain); ripple(x, y, a[2]); flash("var(--ok)");
+  floatText("+" + gain, x, y, "ok"); burst(x, y, 26);
+  if (fast) { sCombo(); const c = document.createElement("div"); c.className = "combo"; c.textContent = "¡Combo x" + (S.combo + 1) + "!"; document.body.appendChild(c); setTimeout(() => c.remove(), 1050); }
+  else sOk();
   $("#cnt").textContent = n + "/6";
   const nf = $("#nofind"); if (nf) nf.remove();
   const d = document.createElement("div"); d.className = "find";
@@ -293,8 +380,10 @@ function found(id, h, e) {
 
 function end(all) {
   if (S.over) return;
-  S.over = true; clearInterval(S.timer);
+  S.over = true; clearInterval(S.timer); if (lens) lens.hidden = true;
   const n = S.found.length;
+  const bonus = all ? S.left * 5 : 0; S.pts += bonus;
+  if (n >= 4) sWin(); else sLose();
   const stars = n === 6 ? 3 : n >= 4 ? 2 : 1;
   const title = n === 6 ? "¡Detective experto!" : n >= 4 ? "¡Buen trabajo de investigación!" : "Te faltaron pistas";
   const msg = n === 6 ? "Encontraste todos los errores de diseño. El sistema de la universidad ya puede corregirse."
@@ -307,8 +396,20 @@ function end(all) {
   app.innerHTML = `<section class="panel result">
     <div class="stars" aria-label="${stars} de 3 estrellas">${[1, 2, 3].map((k) => `<span class="${k <= stars ? "on" : ""}">★</span>`).join("")}</div>
     <h2>${title}</h2><p class="lead">${msg}</p>
+    <div class="big-score">${S.pts}<small>puntos${bonus ? " · incluye " + bonus + " de bono por tiempo" : ""}</small></div>
     <div class="cert"><b>${esc(S.name)}</b><span>${n} de 6 errores · ${all ? "Terminó con " + S.left + " s restantes" : "Se acabó el tiempo"}</span><span>${today} · Semana 4 · Actividad recreativa</span><span>Docente: Dr. Armando Maravilla</span></div>
-    <p class="lead" style="font-size:.92rem">💬 Comparte en el chat de la clase cuántos errores encontraste.</p>
+    <div class="share"><b>Reta a tus compañeros 📲</b>
+      <div class="sgrid">
+        <button class="sbtn nat" id="sh-nat" hidden>📤 Compartir</button>
+        <a class="sbtn wa" id="sh-wa" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2l-.5-.2Z"/></svg>WhatsApp</a>
+        <a class="sbtn fb" id="sh-fb" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M14 8h3V4h-3a4 4 0 0 0-4 4v2H8v4h2v8h4v-8h3l1-4h-4V8Z"/></svg>Facebook</a>
+        <a class="sbtn x" id="sh-x" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.8 3h3.1l-6.8 7.7 8 10.3h-6.2l-4.9-6.3L5.4 21H2.3l7.3-8.3L2 3h6.4l4.4 5.8L17.8 3Zm-1.1 16.2h1.7L7.4 4.7H5.6l11.1 14.5Z"/></svg>X (Twitter)</a>
+        <button class="sbtn cp" id="sh-cp">🔗 Copiar mensaje</button>
+        <button class="sbtn img" id="sh-img">🖼️ Imagen para historias</button>
+      </div>
+      <p class="copied" id="copied" aria-live="polite"></p>
+    </div>
+    <p class="lead" style="font-size:.92rem">💬 Comparte también en el chat de la clase cuántos errores encontraste.</p>
     <button class="btn" id="again">Jugar de nuevo</button></section>
   <section class="panel"><b style="font-family:var(--f-display)">Los 6 errores y cómo se corrigen</b><div class="finds">${list}</div></section>
   <section class="panel"><b style="font-family:var(--f-display)">Así debió diseñarse</b>
@@ -336,6 +437,7 @@ function end(all) {
     </div></div>
   </section>`;
   $("#again").addEventListener("click", play);
+  setupShare(n, stars);
   window.scrollTo({ top: 0, behavior: "smooth" });
   if (n >= 4) confetti();
 }
@@ -345,6 +447,67 @@ function floatText(t, x, y, cls) {
   f.style.left = x + "px"; f.style.top = y + "px"; document.body.appendChild(f);
   setTimeout(() => f.remove(), 950);
 }
+
+/* compartir */
+function gameUrl() { return location.protocol.startsWith("http") ? location.href.split("#")[0] : ""; }
+function shareText(n) {
+  const u = gameUrl();
+  return `🕵️ Encontré ${n} de 6 errores de diseño en "Detective de Pantallas" y saqué ${S.pts} puntos. ¿Me superas?` + (u ? " " + u : "") + " #UTEL #AnálisisYDiseño";
+}
+function setupShare(n, stars) {
+  const txt = shareText(n), u = gameUrl(), enc = encodeURIComponent;
+  $("#sh-wa").href = "https://wa.me/?text=" + enc(txt);
+  $("#sh-x").href = "https://twitter.com/intent/tweet?text=" + enc(txt);
+  const fb = $("#sh-fb");
+  if (u) fb.href = "https://www.facebook.com/sharer/sharer.php?u=" + enc(u); else fb.hidden = true;
+  if (navigator.share) {
+    const nat = $("#sh-nat"); nat.hidden = false;
+    nat.addEventListener("click", async () => {
+      try {
+        const blob = await cardBlob(n, stars), file = blob && new File([blob], "detective-de-pantallas.png", { type: "image/png" });
+        if (file && navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ files: [file], text: txt });
+        else await navigator.share({ text: txt, url: u || undefined });
+      } catch (e) {}
+    });
+  }
+  $("#sh-cp").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(txt); $("#copied").textContent = "Mensaje copiado. Pégalo en tu red social favorita."; }
+    catch (e) { $("#copied").textContent = txt; }
+  });
+  $("#sh-img").addEventListener("click", async () => {
+    const blob = await cardBlob(n, stars); if (!blob) return;
+    const file = new File([blob], "detective-de-pantallas.png", { type: "image/png" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], text: txt }); return; } catch (e) {} }
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "detective-de-pantallas.png";
+    document.body.appendChild(a); a.click(); a.remove();
+    $("#copied").textContent = "Imagen descargada. Súbela a tus historias.";
+  });
+}
+function cardBlob(n, stars) {
+  return new Promise((res) => {
+    const W = 1080, H = 1350, c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d");
+    const grd = g.createLinearGradient(0, 0, W, H); grd.addColorStop(0, "#5B2BC4"); grd.addColorStop(1, "#07B708");
+    g.fillStyle = grd; g.fillRect(0, 0, W, H);
+    for (let i = 0; i < 60; i++) { g.fillStyle = ["#F2B400", "#FFFFFF", "#D6338A", "#2E7DD7"][i % 4]; g.globalAlpha = .35; g.fillRect(Math.random() * W, Math.random() * H, 14, 7); }
+    g.globalAlpha = 1;
+    g.fillStyle = "#FFFFFF"; roundRect(g, 70, 150, W - 140, H - 300, 48); g.fill();
+    const draw = () => {
+      g.textAlign = "center"; g.fillStyle = "#057A0A"; g.font = "800 72px Poppins, Arial, sans-serif"; g.fillText("Detective de Pantallas", W / 2, 405);
+      g.fillStyle = "#5B2BC4"; g.font = "700 40px Poppins, Arial, sans-serif"; g.fillText("Semana 4 · Diseño de sistemas", W / 2, 468);
+      g.font = "130px Arial, sans-serif"; g.fillStyle = "#F2B400"; g.fillText("★".repeat(stars) + "☆".repeat(3 - stars), W / 2, 630);
+      g.fillStyle = "#15211A"; g.font = "800 150px Poppins, Arial, sans-serif"; g.fillText(String(S.pts), W / 2, 805);
+      g.font = "600 44px 'Work Sans', Arial, sans-serif"; g.fillStyle = "#5A6B5E"; g.fillText("puntos · " + n + " de 6 errores", W / 2, 868);
+      g.fillStyle = "#15211A"; g.font = "700 56px Poppins, Arial, sans-serif"; g.fillText(S.name.slice(0, 28), W / 2, 960);
+      g.fillStyle = "#5B2BC4"; g.font = "700 48px Poppins, Arial, sans-serif"; g.fillText("¿Me superas? 🕵️", W / 2, 1050);
+      g.fillStyle = "#5A6B5E"; g.font = "500 32px 'Work Sans', Arial, sans-serif"; g.fillText("Docente: Dr. Armando Maravilla · Actividad recreativa", W / 2, 1120);
+      g.fillStyle = "#FFFFFF"; g.font = "700 38px Poppins, Arial, sans-serif"; g.fillText("Análisis y diseño de sistemas", W / 2, H - 80);
+      c.toBlob((b) => res(b), "image/png");
+    };
+    const logo = new Image(); logo.onload = () => { const lw = 260, lh = lw * logo.height / logo.width; g.drawImage(logo, W / 2 - lw / 2, 180, lw, lh); draw(); }; logo.onerror = draw;
+    logo.src = document.querySelector(".logo").src;
+  });
+}
+function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
 
 /* efectos */
 const cv = document.getElementById("fx"), ctx = cv.getContext("2d");
